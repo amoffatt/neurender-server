@@ -1,0 +1,50 @@
+#!/usr/bin/python3
+
+import os
+import argparse
+import subprocess
+from dotenv import load_dotenv
+import tarfile
+
+ENV_FILE = os.path.expanduser('~/.neurender-config/aws')
+
+def compress_file_or_folder(input_path: str):
+    output_path = f"{input_path}.tar.gz"
+    with tarfile.open(output_path, "w:gz") as tar:
+        for root, dirs, files in os.walk(input_path):
+            for file in files:
+                full_path = os.path.join(root, file)
+                print('Adding ' + full_path + ' to tar.gz')
+                tar.add(full_path, arcname=os.path.relpath(full_path, input_path))
+    return output_path
+
+def main():
+    parser = argparse.ArgumentParser(description='Upload files to S3')
+    parser.add_argument('file_path', metavar='F', type=str, help='Path of the file')
+    parser.add_argument('bucket_path', metavar='B', type=str, nargs='?', default='', help='Path within configured S3 bucket')
+    parser.add_argument('--compress', action='store_true', help='Compress file or folder before uploading')
+
+    args = parser.parse_args()
+
+    file_path = args.file_path
+    if args.compress:
+        file_path = compress_file_or_folder(args.file_path)
+
+    load_dotenv(ENV_FILE)
+
+
+    aws_path = os.getenv('AWS_DATA_PATH')
+    if not aws_path or not aws_path.startswith('s3://'):
+        print('AWS_DATA_PATH is not properly configured.')
+        exit(1)
+
+    base_s3_folder_path = os.path.join(aws_path, args.bucket_path) 
+
+    command = ['aws', 's3', 'cp', file_path, base_s3_folder_path]
+    subprocess.run(command, check=True)
+
+    if args.compress:
+        os.remove(file_path)
+
+if __name__ == '__main__':
+    main()

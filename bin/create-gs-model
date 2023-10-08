@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+
+import os
+from subprocess import run
+import argparse
+from am_imaging.video.frame_selection import export_sharpest_frames
+
+INSTALL_PATH = os.path.expanduser("~/gaussian-splatting")
+
+def main():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('input_file', type=str, help='Input file')
+    parser.add_argument('-e', '--extract-frames', action='store_true', help='If input_file is a video, run frame extraction with the following optional arguments')
+    parser.add_argument('--downscale', type=int, default=1, help='The frame downscale factor. 1=same size, 2=half size')
+    parser.add_argument('--interval', type=int, default=12, help='Select the sharpest of every <interval> frames in the video')
+
+    parser.add_argument('-c', '--convert', action='store_true', help='Register frame locations and convert to gaussian splatting data format')
+    parser.add_argument('-t', '--train', type=int, default=1, help='Run training (defaults to true)')
+
+    args = parser.parse_args()
+
+    print("Run frame extraction:", args.extract_frames)
+    print("Run conversion/SFM:", args.convert)
+    print("Run training:", args.train)
+
+    input_file = os.path.abspath(args.input_file)
+    processing_dir = input_file + "_data"
+    output_dir = os.path.join(processing_dir, "input")
+
+    os.chdir(INSTALL_PATH)
+
+    if args.extract_frames:
+        export_sharpest_frames(input_file, output_dir, "frame_", downscale=args.downscale, interval=args.interval)
+
+
+    if args.convert:
+        run(["python3", "convert.py", "--source_path", processing_dir])
+
+    if args.train == 1:
+        run(["python3", "train.py", "--source_path", processing_dir, "--iterations", "30000", "--resolution", "1920"])
+
+    print("Done!")
+
+
+
+
+if __name__ == '__main__':
+    main()

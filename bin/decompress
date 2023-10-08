@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Function to print usage
+print_usage() {
+    echo "Usage: ./decompress [src]"
+    echo "Decompress and untar the source tarball."
+    exit 1
+}
+
+# Check number of arguments and print usage if necessary
+if [ "$#" -eq 0 ] || [ "$1" == "--help" ]; then
+    print_usage
+fi
+
+# Assign source from argument
+src=$1
+
+# Check if the source ends with .tar.gz, if not, print usage
+if [[ "$src" != *.tar.gz ]]; then
+    echo "Source file must be a .tar.gz file"
+    print_usage
+fi
+
+# Run the tar command to decompress and extract files
+tar -xzvf $src

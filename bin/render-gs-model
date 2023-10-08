@@ -1,0 +1,27 @@
+#!/usr/bin/python3
+
+import os
+import argparse
+from subprocess import run
+
+INSTALL_PATH=os.path.expanduser('~/tools/nerfstudio-gaussian-splatting-fork')
+
+def main():
+    parser = argparse.ArgumentParser(description='Render Gaussian Splatting scene with NerfStudio')
+    parser.add_argument('--model', help='model folder')
+    parser.add_argument('--camera-path', help='camera path file from NerfStudio')
+    parser.add_argument('--output', help='output video path')
+
+    args = parser.parse_args()
+
+    run([
+        'python3',
+        os.path.join(INSTALL_PATH, 'nerfstudio/scripts/gaussian_splatting/render.py'),
+        'camera-path',
+        '--model-path', args.model,
+        '--camera-path', args.camera_path,
+        '--output-path', args.output
+    ])
+
+if __name__== "__main__":
+    main()

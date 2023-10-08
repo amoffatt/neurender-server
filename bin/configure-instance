@@ -1,0 +1,14 @@
+#!/bin/bash
+
+aws configure
+
+# Prompt for AWS Data Path
+echo "Please enter your AWS Data Path:"
+read aws_data_path
+
+
+config_dir=~/.neurender-config
+mkdir -p $config_dir
+
+# Write the result to ~/.neurender-config/aws
+echo "AWS_DATA_PATH=${aws_data_path}" > $config_dir/aws

@@ -1,0 +1,42 @@
+#!/usr/bin/python
+
+import os
+import subprocess
+import time
+from datetime import datetime, timedelta
+import argparse
+
+# Define path to the shutdown time file
+shutdown_time_file_path = os.path.expanduser("~/.shutdown-time")
+
+def write_shutdown_time():
+    shutdown_time = datetime.now() + timedelta(hours=6)
+    with open(shutdown_time_file_path, "w") as f:
+        f.write(shutdown_time.strftime("%Y-%m-%d %H:%M:%S"))
+
+def check_shutdown_time():
+    with open(shutdown_time_file_path, "r") as f:
+        shutdown_time = datetime.strptime(f.read().strip(), "%Y-%m-%d %H:%M:%S")
+    return datetime.now() > shutdown_time
+
+def run_cli_command():
+    instance_id = os.environ['VAST_CONTAINERLABEL'][2:]
+    command = f"vastai stop instance {instance_id}"
+    subprocess.run(command, shell=True)
+
+def main():
+    parser = argparse.ArgumentParser("Run a shutdown timer for this instance")
+    parser.add_argument("--hours", type=float, default=6, help="Hours til shutdown. Shutdown time will be stored in {shutdown_time_file_path}")
+    args = parser.parse_args()
+
+    write_shutdown_time(hours=args.hours)
+
+    while True:
+        if check_shutdown_time():
+            run_cli_command()
+            break
+
+        time.sleep(60) # Check every minute
+
+if __name__ == "__main__":
+    main()

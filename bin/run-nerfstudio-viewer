@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [[ -z $1 ]]; then
+  echo "Usage: $0 <model-path>"
+  exit 1
+fi
+
+model_path=$(realpath $1)
+
+# Created from Dockerfile
+cd ~/tools/nerfstudio-gaussian-splatting-fork
+
+python3 nerfstudio/scripts/gaussian_splatting/run_viewer.py --model-path $model_path
