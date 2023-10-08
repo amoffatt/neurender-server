@@ -1,0 +1,8 @@
+[submodule "src/nerfstudio-gaussian-splatting-fork"]
+	path = tools/nerfstudio-gaussian-splatting-fork
+	url = https://github.com/yzslab/nerfstudio.git
+[submodule "src/nerfstudio-gaussian-splatting-fork"]
+	branch = gaussian_splatting
+[submodule "src/gaussian-splatting"]
+	path = tools/gaussian-splatting
+	url = https://github.com/graphdeco-inria/gaussian-splatting
