@@ -7,7 +7,10 @@ fi
 
 model_path=$(realpath $1)
 
-# Created from Dockerfile
-cd ~/tools/nerfstudio-gaussian-splatting-fork
+install_dir=$(realpath ~/neurender/tools/nerfstudio-gaussian-splatting-fork)
 
+# Created from Dockerfile
+cd $install_dir
+
+export PYTHONPATH=$install_dir:$PYTHONPATH
 python3 nerfstudio/scripts/gaussian_splatting/run_viewer.py --model-path $model_path

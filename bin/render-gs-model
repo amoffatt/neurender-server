@@ -4,7 +4,7 @@ import os
 import argparse
 from subprocess import run
 
-INSTALL_PATH=os.path.expanduser('~/tools/nerfstudio-gaussian-splatting-fork')
+INSTALL_PATH=os.path.expanduser('~/neurender/tools/nerfstudio-gaussian-splatting-fork')
 
 def main():
     parser = argparse.ArgumentParser(description='Render Gaussian Splatting scene with NerfStudio')

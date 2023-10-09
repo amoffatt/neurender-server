@@ -5,7 +5,7 @@ from subprocess import run
 import argparse
 from am_imaging.video.frame_selection import export_sharpest_frames
 
-INSTALL_PATH = os.path.expanduser("~/gaussian-splatting")
+INSTALL_PATH = os.path.expanduser("~/neurender/tools/gaussian-splatting")
 
 def main():
     parser = argparse.ArgumentParser(description='')
@@ -30,13 +30,16 @@ def main():
     os.chdir(INSTALL_PATH)
 
     if args.extract_frames:
-        export_sharpest_frames(input_file, output_dir, "frame_", downscale=args.downscale, interval=args.interval)
+        print("Beginning video frame extraction")
+        export_sharpest_frames(input_file, output_dir, downscale=args.downscale, interval=args.interval)
 
 
     if args.convert:
+        print("Beginning SFM process")
         run(["python3", "convert.py", "--source_path", processing_dir])
 
     if args.train == 1:
+        print("Beginning model training")
         run(["python3", "train.py", "--source_path", processing_dir, "--iterations", "30000", "--resolution", "1920"])
 
     print("Done!")
