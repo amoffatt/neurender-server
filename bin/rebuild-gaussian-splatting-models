@@ -1,0 +1,44 @@
+#!/bin/bash
+
+download_dir=$1
+
+if [ -z $download_dir ]; then
+    echo "Usage: rebuild <download_dir>"
+    echo "Download directory must be specified"
+    exit 1
+fi
+
+
+set -e
+
+# Note: may not be necessary, depending on base docker image used
+# Only install cuda if doesn't exist
+# cuda_toolkit_dir=/usr/local/cuda-11.8
+
+# if [[ -d "$cuda_toolkit_dir" ]]; then
+#     echo "Cuda Toolkit already installed in $cuda_toolkit_dir"
+# else
+#     apt-get install -y -q libglew-dev libassimp-dev libboost-all-dev libgtk-3-dev libopencv-dev libglfw3-dev libavdevice-dev libavcodec-dev libeigen3-dev libxxf86vm-dev libembree-dev
+
+#     # Install CUDA toolkit 11.8
+#     mkdir -p $download_dir
+#     cuda_filename=cuda_11.8.0_520.61.05_linux.run
+#     wget --no-clobber -P $download_dir https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/$cuda_filename
+#     sh $download_dir/$cuda_filename
+# fi
+
+submodules_dir=~/neurender/tools/gaussian-splatting/submodules
+wheel_out_dir=~/neurender/tools/gaussian-splatting-build/wheels
+
+cd $submodules_dir/diff-gaussian-rasterization
+python setup.py bdist_wheel
+pip install --force-reinstall dist/*.whl
+echo "Moving built wheel to $wheel_out_dir"
+mv dist/*.whl $wheel_out_dir
+
+cd $submodules_dir/simple-knn
+python setup.py bdist_wheel
+pip install --force-reinstall dist/*.whl
+echo "Moving built wheel to $wheel_out_dir"
+mv dist/*.whl $wheel_out_dir
+
