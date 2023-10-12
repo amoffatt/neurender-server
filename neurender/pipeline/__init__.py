@@ -11,10 +11,13 @@ from ..utils.subprocess import run_command
 from neurender.paths import GAUSSIAN_SPLATTING_ROOT
 
 
-SRC_MEDIA_PATH = 'src-media'
-STAGED_MEDIA_PATH = 'staged-media'
-REGISTERED_MEDIA_PATH = 'registered-media'
-REGISTERED_MEDIA_GS_PATH = 'registered-media-gaussian-splatting'
+SRC_MEDIA_PATH = 'media'
+STAGED_MEDIA_PATH = 'media-staged'
+REGISTERED_MEDIA_PATH = 'media-registered'
+REGISTERED_MEDIA_GS_PATH = 'media-registered-gaussian-splatting'
+
+NERF_MODEL_PATH = 'model-nerf'
+GS_MODEL_PATH = 'model-gaussian-splatting'
 
 
 class PipelineStep(BaseModel):
@@ -108,11 +111,11 @@ class TrainGaussianSplattingModel(TrainingStep):
     save_iterations:List[int] = [7000, 30_000]
 
     def run(self, project:Path, working_path:Path):
-        source_path = working_path / REGISTERED_MEDIA_GS_PATH
 
         run_command([
             "python3", "train.py",
-             "--source_path", source_path,
+             "--source_path", working_path / REGISTERED_MEDIA_GS_PATH,
+             "--model_path", working_path / GS_MODEL_PATH,
              "--iterations", self.iterations,
              "--resolution", self.resolution,
              "--save_iterations", *self.save_iterations,
