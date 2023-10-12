@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=65.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurender"
+version = "0.1.0"
+description = "Wrapper to automate volumetric capture models via NerfStudio and other related tools"
+authors = [
+    { name = "Aaron Moffatt", email = "contact@aaronmoffatt.com" }
+]
+
+# [project.optional-dependencies]
+# tests = ["pytest>=7.0.1"]
+# docs = ["mkdocs>=1.2.3"]
+
+dependencies = [
+    "pydantic",
+    "pydantic_yaml",
+    "am-imaging",
+]
+
+# For a list of valid classifiers, see https://pypi.org/classifiers/
+classifiers = [  # Optional
+  "Development Status :: 3 - Alpha",
+
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: 3D photography",
+
+  # Pick your license as you wish
+  "License :: OSI Approved :: Apache 2.0",
+
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+requires-python = ">=3.8,<4.0"
