@@ -4,7 +4,8 @@ services:
   gaussian-splatting:
     platform: linux/amd64
     shm_size: '12gb'
-    image: airstudio/neurender:latest
+    image: airstudio/neurender_nerfstudio:latest
+    container_name: neurender_nerfstudio
     build:
       context: .
       dockerfile: ./Dockerfile

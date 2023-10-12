@@ -1,12 +1,12 @@
 #!/bin/bash
 
-download_dir=$1
+# download_dir=$1
 
-if [ -z $download_dir ]; then
-    echo "Usage: rebuild <download_dir>"
-    echo "Download directory must be specified"
-    exit 1
-fi
+# if [ -z $download_dir ]; then
+#     echo "Usage: rebuild <download_dir>"
+#     echo "Download directory must be specified"
+#     exit 1
+# fi
 
 
 set -e
@@ -31,13 +31,13 @@ submodules_dir=~/neurender/tools/gaussian-splatting/submodules
 wheel_out_dir=~/neurender/tools/gaussian-splatting-build/wheels
 
 cd $submodules_dir/diff-gaussian-rasterization
-python setup.py bdist_wheel
+python3 setup.py bdist_wheel
 pip install --force-reinstall dist/*.whl
 echo "Moving built wheel to $wheel_out_dir"
 mv dist/*.whl $wheel_out_dir
 
 cd $submodules_dir/simple-knn
-python setup.py bdist_wheel
+python3 setup.py bdist_wheel
 pip install --force-reinstall dist/*.whl
 echo "Moving built wheel to $wheel_out_dir"
 mv dist/*.whl $wheel_out_dir
