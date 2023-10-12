@@ -90,11 +90,13 @@ class SetupGaussianSplattingData(PipelineStep):
         output_path = working_path / REGISTERED_MEDIA_GS_PATH
         shutil.copytree(input_path / 'colmap', output_path / 'distorted', dirs_exist_ok=True)
         shutil.copytree(input_path / 'images', output_path / 'input', dirs_exist_ok=True)
-    def run(self, project:Path):
-        input_path = project / REGISTERED_MEDIA_PATH
-        output_path = project / REGISTERED_MEDIA_GS_PATH
-        shutil.copytree(input_path / 'colmap', output_path / 'distorted')
-        shutil.copytree(input_path / 'images', output_path / 'input')
+
+        # Undistort aligned images
+        run_command([
+            "python3", "convert.py",
+             "--source_path", output_path,
+             "--skip_matching",
+        ], cwd=GAUSSIAN_SPLATTING_ROOT)
         
     
 class TrainingStep(PipelineStep):
