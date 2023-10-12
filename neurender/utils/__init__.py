@@ -1,9 +1,12 @@
 from pathlib import Path
 import uuid
 import os
+from typing import Type
+from pydantic import BaseModel
+from pydantic_yaml import parse_yaml_file_as, to_yaml_file
 
-def path_str(path:Path) -> str:
-    return str(path.expanduser().absolute())
+def path_str(path:Path | str) -> str:
+    return str(Path(path).expanduser().absolute())
 
 def unique_subpath(base_path:Path):
     while True:
@@ -13,4 +16,10 @@ def unique_subpath(base_path:Path):
             return path
 
             
+
+def read_yaml_file(_type:Type[BaseModel], path:Path | str):
+    return parse_yaml_file_as(_type, path)
+
+def write_yaml_file(model:BaseModel, path:Path | str):
+    to_yaml_file(path, model)
         

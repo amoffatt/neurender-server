@@ -1,6 +1,7 @@
 import sys, os
 import traceback
 import pydantic
+import asyncio
 from pydantic_yaml import parse_yaml_raw_as
 from pathlib import Path
 from typing import List, Optional
@@ -8,6 +9,7 @@ from typing import List, Optional
 from .pipeline import PipelineStep, ImportImageBatch
 from .utils import path_str, unique_subpath
 from .utils.pydantic import pydantic_subclassof
+from . import config
 
 PIPELINE_FILE_SUFFIX = '.nrp'
 
@@ -17,7 +19,22 @@ PIPELINES_PATH = "pipelines"
 # print("Type value of ImageBatch step:", ImportImageBatch.__type)
 
 class NeurenderProject:
-    def __init__(self, path):
+    @staticmethod
+    async def load(src_url:str):
+        if src_url.startswith('s3://'):
+            projects_dir = Path('.')
+            project_path = projects_dir / src_url[5:]
+
+            await storage.copy_s3(src_url, project_path)
+
+            return NeurenderProject(project_path, src_url)
+        else:
+            return NeurenderProject(src_url)
+        
+
+        
+    def __init__(self, path:str, url:str=None):
+        self.url = url
         self.path = Path(path).expanduser()
         self.pipelines_path = self.path / PIPELINES_PATH
 
