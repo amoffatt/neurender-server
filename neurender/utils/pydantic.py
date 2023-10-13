@@ -22,11 +22,14 @@ def inject_classname_field(cls:BaseModel, field_name:str):
     schema['schema']['fields'][field_name] = field_schema
 
 def pydantic_union(types:List[Type], descriptor_field='model_type') -> Type:
-    print("Creating Pydantic union of types:", types)
+    '''
+    In order for pydantic to distinguish which class should be instantiated
+    during deserialization, we must inject a custom field into the class's 
+    pydantic schema which stores the expected value for a special descriminator_field
+    with value set to the class's name
+    '''
     for t in types:
         inject_classname_field(t, descriptor_field)
-        #t.__type = Literal[t.__class__.__name__]
-        # print(" => discriminator field for:", t, getattr(t, MODEL_TYPE_FIELD) if hasattr(t, MODEL_TYPE_FIELD) else None)
     union = Union.__getitem__(tuple(types))
     annotated = Annotated[union, Field(discriminator=descriptor_field)]
     return annotated
