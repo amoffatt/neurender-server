@@ -4,11 +4,12 @@ from typing import List, Literal
 from pathlib import Path
 from pydantic import BaseModel, root_validator
 from abc import ABCMeta, abstractmethod
+from PIL import Image
 from am_imaging.video.frame_selection import export_sharpest_frames
 from ..utils import path_str
 from ..utils.subprocess import run_command
 
-from neurender.paths import GAUSSIAN_SPLATTING_ROOT
+from neurender.paths import GAUSSIAN_SPLATTING_ROOT, NERFSTUDIO_GAUSSIAN_SPLATTING_ROOT
 
 
 SRC_MEDIA_PATH = 'media'
@@ -52,7 +53,7 @@ class ImportImageBatch(PipelineStep):
                 scaling = self.scaling
                 if self.scale_to_max != 0:
                     max_dimension = max(image.width, image.height)
-                    scaling = scale_to_max_dimension / max_dimension
+                    scaling = min(1, self.scale_to_max / max_dimension)
 
                 new_size = (int(image.width * scaling), int(image.height * scaling))
                 image.thumbnail(new_size, Image.ANTIALIAS)
@@ -122,5 +123,16 @@ class TrainGaussianSplattingModel(TrainingStep):
         ], cwd=GAUSSIAN_SPLATTING_ROOT)
 
         
+class RunNerfStudioGaussianSplattingViewer(PipelineStep):
+    def run(self, project:Path, working_path:Path):
+        run_command([
+            "python3",
+            "nerfstudio/scripts/gaussian_splatting/run_viewer.py",
+             "--model-path", working_path / GS_MODEL_PATH,
+        ], cwd=NERFSTUDIO_GAUSSIAN_SPLATTING_ROOT)
+
+
+    
+    
     
         
