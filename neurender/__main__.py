@@ -5,26 +5,51 @@ import asyncio
 from . import NeurenderProject
 from .utils.subprocess import run_command
 from .utils import read_yaml_file
-from . import config
+from . import config, storage
+
 
 #WIP
 # s3 = boto3.client('s3', endpoint_url='https://s3.us-west-1.wasabisys.com', aws_access_key_id='DTB5BEMDNKX4GYNJU58M', aws_secret_access_key='akjA8lTJJMgpJbpuKVDukO9SdyAJcpOQyVcmIUu8')
 # src_files = s3.list_objects(Bucket='neurender-src-footage')['Content']
 
+def _add_project_arg(parser:ArgumentParser):
+    parser.add_argument("project", type=str, help="Path or S3 bucket url to a project directory")
+    parser.add_argument("--local-path", "-l", type=str, default='', help="If project is remote, specifies a local path to download project files")
+
 def _add_run_args(parser:ArgumentParser):
-    parser.add_argument("--pipeline", type=str, default="", help="Specify a specific pipeline to run. Defaults to the pipeline found in the project/pipelines folder")
-    parser.add_argument("--output", type=str, default="", help="Specify an output path for pipeline execution artifacts")
+    _add_project_arg(parser)
+    parser.add_argument("--pipeline", "-p", type=str, default="", help="Pipeline filename to run. Defaults to the first pipeline found in the {project}/pipelines folder")
+    parser.add_argument("--output", "-o", type=str, default="", help="Output path for pipeline execution artifacts. Defaults to {project}/output/{pipeline_filename}")
+    parser.add_argument("--upload-url", "-u", type=str, default="", help="Specify and S3 url other than the project URL to upload pipeline output artifacts (specified within the pipeline)")
     parser.add_argument("--on-finished", type=str, default="", help="Run command when pipeline is finished")
     
-async def _run_command(args:Namespace):
-    project = await NeurenderProject.load(args.project)
+def _run_command(args:Namespace):
+    project = NeurenderProject.load(args.project, args.local_path)
     pipeline = project.get_pipeline(args.pipeline)
-    pipeline.run(working_path=args.output)
+
+    working_path = args.output
+    pipeline.run(working_path=working_path)
+
+    upload_url = args.upload_url or project.url
+    if upload_url:
+        pipeline.upload_output_artifacts(working_path, upload_url)
 
     if args.on_finished:
         run_command([args.on_finished])
 
+def _add_download_args(parser:ArgumentParser):
+    parser.add_argument('src', type=str, help="Source directory")
+    parser.add_argument('dst', type=str, help="Destination directory")
 
+def _download_command(args:Namespace):
+    project = NeurenderProject.load(args.src, args.dst)
+    print("Done.")
+
+def _upload_command(args:Namespace):
+    print(f"Uploading {args.local_path} => {args.remote_url}")
+    storage.S3().sync_to_remote(args.src, args.dst)
+    print("Done.")
+    
 
 def _add_config_args(parser:ArgumentParser):
     parser.add_argument('--set-all', type=str, default='', help='Provide full YAML config file contents as an argument string')
@@ -40,12 +65,13 @@ def _config_command(args:Namespace):
 
 def main():
     parser = ArgumentParser(description="Interface to control Neurender pipelines and configuration")
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
     _add_run_args(subparsers.add_parser("run", help="Run a Neurender project pipeline"))
     _add_config_args(subparsers.add_parser("config", help="Set Neurender configuration options"))
 
-    parser.add_argument("project", type=str, help="Path to a project directory")
+    _add_download_args(subparsers.add_parser("download", help="Download a Neurender project from an S3 bucket"))
+    _add_download_args(subparsers.add_parser("upload", help="Upload a Neurender project to an S3 bucket"))  # same args as download
 
     args = parser.parse_args()
 
@@ -55,8 +81,15 @@ def main():
         _run_command(args)
     if command == "config":
         _config_command(args)
+    if command == "download":
+        _download_command(args)
+    if command == "upload":
+        _upload_command(args)
+
 
 
     
 if __name__ == '__main__':
     main()
+
+    
