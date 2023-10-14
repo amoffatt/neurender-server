@@ -89,7 +89,11 @@ class S3:
 
             local_path = dst / PurePath(file_key).relative_to(bucket_prefix)
 
-            print(f" ==> Downloading remote S3 file at {bucket_name}/{file_key}")
+            if local_path.exists():
+                print(f" ==> Skipping file already present at {local_path}")
+                continue
+
+            print(f" ==> Downloading remote S3 file at {bucket_name}/{file_key} => {local_path}")
 
             if is_s3_dir(obj):
                 local_path.mkdir(exist_ok=True, parents=True)

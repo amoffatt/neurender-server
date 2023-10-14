@@ -3,9 +3,9 @@ import traceback
 import pydantic
 import asyncio
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
-from .pipeline import PipelineStep, ImportImageBatch
+from .pipeline import PipelineStep
 from .utils import path_str, unique_subpath
 from .utils.pydantic import pydantic_subclassof, read_yaml_file
 from . import storage
@@ -34,7 +34,7 @@ class NeurenderPipeline(pydantic.BaseModel):
 
     @property
     def default_output_subpath(self):
-        return Path('output') / self.path.name
+        return Path('output') / self.path.stem  # Pipeline name without extension
 
     def run(self, working_path=''):
         print(f"Running Neurender pipeline '{self.name}' ({path_str(self.path)})")
@@ -60,20 +60,21 @@ class NeurenderPipeline(pydantic.BaseModel):
                 break
 
         print("Done.")
+        return working_path
 
-    def upload_output_artifacts(self, working_path:Path, s3_url:str):
+    def upload_output_artifacts(self, working_path:Path, project_url:str):
         if not self.upload_artifacts:
             print("No artifacts to upload")
             return
 
         s3 = storage.S3()
 
+        # Note: Using os.path.join() because (Path(project_url) / subpath) will mangle the URL
+        dst_url = os.path.join(project_url, self.default_output_subpath)
+
         for artifact in self.upload_artifacts:
-            s3.sync_to_remote(working_path, s3_path, select=artifact)
-
-
-
-        
+            print(f"Checking upload path for artifacts: {working_path}/{artifact}")
+            s3.sync_to_remote(working_path, dst_url, select=artifact)
 
         
 

@@ -22,11 +22,12 @@ def _run_command(args:Namespace):
     pipeline = project.get_pipeline(args.pipeline)
 
     working_path = args.output
-    pipeline.run(working_path=working_path)
+    working_path = pipeline.run(working_path=working_path)
 
     upload_url = args.upload_url or project.url
+    print("Upload url:", upload_url)
     if upload_url:
-        pipeline.upload_output_artifacts(working_path, upload_url)
+        pipeline.upload_output_artifacts(Path(working_path), upload_url)
 
     if args.on_finished:
         run_command([args.on_finished])
