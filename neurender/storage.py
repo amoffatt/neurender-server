@@ -1,5 +1,5 @@
 
-from pathlib import Path
+from pathlib import Path, PurePath
 import fnmatch
 import urllib
 import boto3
@@ -87,7 +87,7 @@ class S3:
             if not fnmatch.fnmatch(file_key, select):
                 continue
 
-            local_path = dst / file_key
+            local_path = dst / PurePath(file_key).relative_to(bucket_prefix)
 
             print(f" ==> Downloading remote S3 file at {bucket_name}/{file_key}")
 
