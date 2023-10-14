@@ -122,3 +122,5 @@ WORKDIR $HOME
 
 # COPY --chown=$USER:$USER bin bin
 
+ENTRYPOINT [ "/home/user/neurender/startup.sh" ]
+
