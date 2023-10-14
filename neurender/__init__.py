@@ -2,13 +2,12 @@ import sys, os
 import traceback
 import pydantic
 import asyncio
-from pydantic_yaml import parse_yaml_raw_as
 from pathlib import Path
 from typing import List, Optional
 
 from .pipeline import PipelineStep, ImportImageBatch
 from .utils import path_str, unique_subpath
-from .utils.pydantic import pydantic_subclassof
+from .utils.pydantic import pydantic_subclassof, read_yaml_file
 from . import storage
 
 PIPELINE_FILE_SUFFIX = '.nrp'
@@ -19,12 +18,8 @@ PIPELINES_PATH = "pipelines"
 
 class NeurenderPipeline(pydantic.BaseModel):
     @staticmethod
-    def load_from_yaml(path:Path):
-
-        with open(path_str(path), 'r') as f:
-            contents = f.read()
-
-        pipeline = parse_yaml_raw_as(NeurenderPipeline, contents)
+    def load(path:Path):
+        pipeline = read_yaml_file(NeurenderPipeline, path)
         pipeline.path = path
         return pipeline
     
@@ -121,7 +116,7 @@ class NeurenderProject:
 
 
     def _get_pipeline_by_path(self, path:Path) -> NeurenderPipeline:
-        pipeline = NeurenderPipeline.load_from_yaml(path)
+        pipeline = NeurenderPipeline.load(path)
         pipeline.path = path
         pipeline.project_path = self.path
         return pipeline

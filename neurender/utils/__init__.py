@@ -16,10 +16,4 @@ def unique_subpath(base_path:Path):
             return path
 
             
-
-def read_yaml_file(_type:Type[BaseModel], path:Path | str):
-    return parse_yaml_file_as(_type, path)
-
-def write_yaml_file(model:BaseModel, path:Path | str):
-    to_yaml_file(path, model)
         

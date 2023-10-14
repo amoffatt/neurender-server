@@ -1,11 +1,8 @@
-import os
+from io import IOBase, StringIO
 from pathlib import Path
 from pydantic import BaseModel
-from .utils import read_yaml_file, write_yaml_file
+from .utils.pydantic import read_yaml_file, write_yaml_file
 from .paths import CONFIG_FILE
-import boto3
-
-
 
 
 class S3Config(BaseModel):
@@ -23,10 +20,16 @@ class NeurenderConfig(BaseModel):
 
 
 
+def load(file:Path | str | IOBase = None):
+    try:
+        return read_yaml_file(NeurenderConfig, file or CONFIG_FILE)
+    except Exception as e:
+        print(f"Error loading {CONFIG_FILE}: {e}")
+        return NeurenderConfig()
 
-
-def load():
-    return read_yaml_file(NeurenderConfig, CONFIG_FILE)
+def load_str(config_str:str):
+    return load(StringIO(config_str))
+    
 
 def write(config:NeurenderConfig):
     write_yaml_file(config, CONFIG_FILE)
