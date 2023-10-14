@@ -1,28 +1,22 @@
 from argparse import ArgumentParser, Namespace
-from pathlib import Path
-import asyncio
 
 from . import NeurenderProject
 from .utils.subprocess import run_command
-from .utils import read_yaml_file
 from . import config, storage
 
 
-#WIP
-# s3 = boto3.client('s3', endpoint_url='https://s3.us-west-1.wasabisys.com', aws_access_key_id='DTB5BEMDNKX4GYNJU58M', aws_secret_access_key='akjA8lTJJMgpJbpuKVDukO9SdyAJcpOQyVcmIUu8')
-# src_files = s3.list_objects(Bucket='neurender-src-footage')['Content']
-
 def _add_project_arg(parser:ArgumentParser):
     parser.add_argument("project", type=str, help="Path or S3 bucket url to a project directory")
-    parser.add_argument("--local-path", "-l", type=str, default='', help="If project is remote, specifies a local path to download project files")
+    parser.add_argument("-l", "--local-path", type=str, default='', help="If project is remote, specifies a local path to download project files")
 
 def _add_run_args(parser:ArgumentParser):
     _add_project_arg(parser)
-    parser.add_argument("--pipeline", "-p", type=str, default="", help="Pipeline filename to run. Defaults to the first pipeline found in the {project}/pipelines folder")
-    parser.add_argument("--output", "-o", type=str, default="", help="Output path for pipeline execution artifacts. Defaults to {project}/output/{pipeline_filename}")
-    parser.add_argument("--upload-url", "-u", type=str, default="", help="Specify and S3 url other than the project URL to upload pipeline output artifacts (specified within the pipeline)")
+    parser.add_argument("-p", "--pipeline", type=str, default="", help="Pipeline filename to run. Defaults to the first pipeline found in the {project}/pipelines folder")
+    parser.add_argument("-o", "--output", type=str, default="", help="Output path for pipeline execution artifacts. Defaults to {project}/output/{pipeline_filename}")
+    parser.add_argument("-u", "--upload-url", type=str, default="", help="Specify and S3 url other than the project URL to upload pipeline output artifacts (specified within the pipeline)")
     parser.add_argument("--on-finished", type=str, default="", help="Run command when pipeline is finished")
     
+# The `run` subcommand
 def _run_command(args:Namespace):
     project = NeurenderProject.load(args.project, args.local_path)
     pipeline = project.get_pipeline(args.pipeline)
@@ -41,10 +35,12 @@ def _add_download_args(parser:ArgumentParser):
     parser.add_argument('src', type=str, help="Source directory")
     parser.add_argument('dst', type=str, help="Destination directory")
 
+# The `download` subcommand
 def _download_command(args:Namespace):
     project = NeurenderProject.load(args.src, args.dst)
     print("Done.")
 
+# The `upload` subcommand
 def _upload_command(args:Namespace):
     print(f"Uploading {args.local_path} => {args.remote_url}")
     storage.S3().sync_to_remote(args.src, args.dst)
@@ -54,6 +50,7 @@ def _upload_command(args:Namespace):
 def _add_config_args(parser:ArgumentParser):
     parser.add_argument('--set-all', type=str, default='', help='Provide full YAML config file contents as an argument string')
 
+# The `config` subcommand
 def _config_command(args:Namespace):
     c = config.load()
 
