@@ -124,5 +124,5 @@ RUN pip install -e neurender
 
 # COPY --chown=$USER:$USER bin bin
 
-ENTRYPOINT [ "/home/user/neurender/startup.sh" ]
+ENTRYPOINT [ "/home/user/neurender/run-shutdown-timer.sh" ]
 
