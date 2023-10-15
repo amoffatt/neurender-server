@@ -55,7 +55,7 @@ class S3:
         
 
 
-    def sync_to_local(self, src:str, dst:Path, select="**/*"):
+    def sync_to_local(self, src:str, dst:Path | str, select="**/*"):
         """
         Syncs an S3 bucket url folder `src` to the local filesystem at `dst`.
         The s3 prefix is optional in `src`, which can be of the following forms:
@@ -68,7 +68,7 @@ class S3:
         properly expand the pattern '**'
         """
         s3 = self.s3
-        dst = dst.expanduser()
+        dst = Path(dst).expanduser()
         bucket_name, bucket_prefix = parse_s3_url(src)
 
         print(f"Copying S3 to local '{bucket_name}:{bucket_prefix}' => '{dst}'")
@@ -102,21 +102,21 @@ class S3:
                 s3.download_file(bucket_name, file_key, local_path)
 
 
-    def sync_to_remote(self, src:Path, dst:str, select="**/*"):
+    def sync_to_remote(self, src:Path | str, dst:str, select="**/*"):
         """
         Syncs the local file system folder `src` to the S3 bucket path/url `dst`.
         """
         s3 = self.s3
 
-        src = src.expanduser()
+        src = Path(src).expanduser()
         
         bucket_name, bucket_prefix = parse_s3_url(dst)
         bucket_prefix = Path(bucket_prefix)
 
-        for f in src.glob(select):
-            if f.is_file():
-                src_path = path_str(src / f)
-                dst_path = str(bucket_prefix / f)
+        for src_path in src.glob(select):
+            if src_path.is_file():
+                subpath = src_path.relative_to(src)
+                dst_path = str(bucket_prefix / subpath)
 
                 print(f" ==> Uploading file at {src_path} to {bucket_name}:{dst_path}")
                 s3.upload_file(src_path, bucket_name, dst_path)
