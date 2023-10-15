@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import List, Literal
+from typing import List, Literal, Tuple
 from pathlib import Path
 from pydantic import BaseModel, root_validator
 from abc import ABCMeta, abstractmethod
@@ -20,91 +20,124 @@ REGISTERED_MEDIA_GS_PATH = 'media-registered-gaussian-splatting'
 NERF_MODEL_PATH = 'model-nerf'
 GS_MODEL_PATH = 'model-gaussian-splatting'
 
+class RunContext:
+    def __init__(self, project_path:Path, working_path:Path):
+        self.project_path = project_path
+        self.working_path = working_path
+
+    @property
+    def src_media_path(self) -> Path:
+        return self.project_path / SRC_MEDIA_PATH
+
+    @property
+    def staged_media_path(self) -> Path:
+        return self.working_path / STAGED_MEDIA_PATH
+
 
 class PipelineStep(BaseModel):
      
     @abstractmethod
-    def run(self, project_path:Path, working_path:Path):
+    def run(self, ctx:RunContext):
         pass
 
     def __str__(self):
         return f"{self.__class__.__name__}({super().__str__()})"
 
 
-class ImportImageBatch(PipelineStep):
-    input_path:str = SRC_MEDIA_PATH
-    output_path:str = STAGED_MEDIA_PATH
-    select:str = "**/*"
-
+class _BaseImportStep(PipelineStep):
     # Scale long edge of frame to dimension
     # 0 indicates no rescaling
     scale_to_max:float = 0
-    scaling:float = 1
 
-    def run(self, project:Path, working_path:Path):
-        input_path = project / self.input_path
-        output_path = working_path / self.output_path
+    # Alternatively, downscale frames by a factor
+    downscale:float = 1
+
+    def _get_scaling(self, frame_size:Tuple[int, int]) -> float:
+        if self.scale_to_max != 0:
+            max_dimension = max(frame_size[0], frame_size[1])
+            return min(1, self.scale_to_max / max_dimension)
+        return 1 / self.downscale
+
+    def _get_scaled_frame(self, frame_size:Tuple[int, int]) -> Tuple[int, int]:
+        scaling = self._get_scaling(frame_size)
+        return (int(frame_size[0] * scaling), int(frame_size[1] * scaling))
+
+
+    def _get_stage_file_path(self, ctx:RunContext, src_file_path:Path):
+        # Destination path, flattening directory structure for SFM scripts
+        subpath = src_file_path.relative_to(ctx.src_media_path)
+        flat_filename = str(subpath).replace('/', '_')
+        stage_file_path = ctx.staged_media_path / flat_filename
+        stage_file_path.parent.mkdir(parents=True, exist_ok=True)
+        return stage_file_path
+
+
+
+class ImportImageBatch(_BaseImportStep):
+    select:str = "**/*"
+
+    def run(self, ctx:RunContext):
+        src_path = ctx.src_media_path
         is_rescaling = self.scale_to_max != 0 or self.scaling != 1
 
-        print("Collecting images in", input_path)
-        for src_path in Path(input_path).glob(self.select):
-            if not src_path.is_file():
+        print("Collecting images in", src_path)
+        for src_file_path in Path(src_path).glob(self.select):
+            if not src_file_path.is_file():
                 continue
 
-            # Destination path, flattening directory structure for SFM scripts
-            subpath = src_path.relative_to(input_path)
-            flat_fn = str(subpath).replace('/', '_')
-            dst_path = output_path / flat_fn
-            dst_path.parent.mkdir(parents=True, exist_ok=True)
+            stage_file_path = self.get_stage_file_path(ctx, src_file_path)
 
             if is_rescaling:
-                print(f"Rescaling image {subpath}")
-                image = Image.open(src_path)
+                print(f"Rescaling image {src_file_path}")
+                image = Image.open(src_file_path)
 
-                scaling = self.scaling
-                if self.scale_to_max != 0:
-                    max_dimension = max(image.width, image.height)
-                    scaling = min(1, self.scale_to_max / max_dimension)
-
-                new_size = (int(image.width * scaling), int(image.height * scaling))
+                new_size = self._get_scaled_frame(image.size)
                 image.thumbnail(new_size, Image.ANTIALIAS)
 
-                image.save(dst_path)
+                image.save(stage_file_path)
             else:
-                shutil.copy(src_path, dst_path)
+                shutil.copy(src_file_path, stage_file_path)
 
 
-class ImportVideoFile(PipelineStep):
-    input_path:str
-    output_path:str = STAGED_MEDIA_PATH
+class ImportVideo(_BaseImportStep):
+    # Relative to {project}/media path
+    file_path:str
     extraction_interval:int = 1
     downscale:float = 1
 
-    def run(self, project_path:Path, working_path:Path):
-        todo()
-        export_sharpest_frames()
+    def run(self, ctx:RunContext):
+        input_path = ctx.src_media_path / self.file_path
+        output_frame_prefix = path_str(self.get_stage_file_path(ctx, input_path)) + '_'
+        export_sharpest_frames(input_path,
+                               ctx.staged_media_path,
+                               output_frame_prefix,
+                               downscale=self.downscale,
+                               interval=self.extraction_interval)
         
     
 
 class RegisterImages(PipelineStep):
-    input_path:str = STAGED_MEDIA_PATH
+    # Relative to media-staged/
+    input_path:str = '.'
+
+    # Relative to working path
     output_path:str = REGISTERED_MEDIA_PATH
 
-    def run(self, project:Path, working_path:Path):
-        print("Processing data at path:", working_path / self.input_path)
+    def run(self, ctx:RunContext):
+        print("Processing data at path:", ctx.staged_media_path)
         run_command([
             'ns-process-data',
             'images',
-            '--data', self.input_path,
+            '--data', ctx.staged_media_path / self.input_path,
             '--output-dir', self.output_path,
-        ], cwd=path_str(working_path))
+        ], cwd=path_str(ctx.working_path))
 
 
 class SetupGaussianSplattingData(PipelineStep):
 
-    def run(self, project:Path, working_path:Path):
-        input_path = working_path / REGISTERED_MEDIA_PATH
-        output_path = working_path / REGISTERED_MEDIA_GS_PATH
+    def run(self, ctx:RunContext):
+        input_path = ctx.working_path / REGISTERED_MEDIA_PATH
+        output_path = ctx.working_path / REGISTERED_MEDIA_GS_PATH
         shutil.copytree(input_path / 'colmap', output_path / 'distorted', dirs_exist_ok=True)
         shutil.copytree(input_path / 'images', output_path / 'input', dirs_exist_ok=True)
 
@@ -124,12 +157,12 @@ class TrainGaussianSplattingModel(TrainingStep):
     iterations:int = 30_000
     save_iterations:List[int] = [7000, 30_000]
 
-    def run(self, project:Path, working_path:Path):
+    def run(self, ctx:RunContext):
 
         run_command([
             "python3", "train.py",
-             "--source_path", working_path / REGISTERED_MEDIA_GS_PATH,
-             "--model_path", working_path / GS_MODEL_PATH,
+             "--source_path", ctx.working_path / REGISTERED_MEDIA_GS_PATH,
+             "--model_path", ctx.working_path / GS_MODEL_PATH,
              "--iterations", self.iterations,
              "--resolution", self.resolution,
              "--save_iterations", *self.save_iterations,
@@ -137,11 +170,11 @@ class TrainGaussianSplattingModel(TrainingStep):
 
         
 class RunNerfStudioGaussianSplattingViewer(PipelineStep):
-    def run(self, project:Path, working_path:Path):
+    def run(self, ctx:RunContext):
         run_command([
             "python3",
             "nerfstudio/scripts/gaussian_splatting/run_viewer.py",
-             "--model-path", working_path / GS_MODEL_PATH,
+             "--model-path", ctx.working_path / GS_MODEL_PATH,
         ], cwd=NERFSTUDIO_GAUSSIAN_SPLATTING_ROOT)
 
 

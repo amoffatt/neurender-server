@@ -5,7 +5,7 @@ import asyncio
 from pathlib import Path
 from typing import List
 
-from .pipeline import PipelineStep
+from .pipeline import PipelineStep, RunContext
 from .utils import path_str, unique_subpath
 from .utils.pydantic import pydantic_subclassof, read_yaml_file
 from . import storage
@@ -48,11 +48,12 @@ class NeurenderPipeline(pydantic.BaseModel):
 
         print("  => Processing outputs in:", path_str(working_path))
 
+        context = RunContext(self.project_path, working_path)
 
         for step in self.pipeline:
             print("  =>", step)
             try:
-                step.run(self.project_path, working_path)
+                step.run(context)
             except Exception as e:
                 print("Pipeline error:", file=sys.stderr)
                 traceback.print_exception(e)
