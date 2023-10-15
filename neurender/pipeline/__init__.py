@@ -137,6 +137,9 @@ class ImportVideo(_BaseImportStep):
                                interval=self.extraction_interval)
         
     
+MatchingMethodID = Literal['exhaustive', 'sequential', 'vocab_tree']
+MatcherTypeID = Literal['any', 'NN', 'superglue', 'superglue-fast', 'NN-superpoint', 'NN-ratio', 'NN-mutual', 'adalam']
+FeatureTypeID = Literal['any', 'sift', 'superpoint', 'superpoint_aachen', 'superpoint_max', 'superpoint_inloc', 'r2d2', 'd2net-ss', 'sosnet', 'disk']
 
 class RegisterImages(PipelineStep):
     # Relative to media-staged/
@@ -144,6 +147,10 @@ class RegisterImages(PipelineStep):
 
     # Relative to working path
     output_path:str = REGISTERED_MEDIA_PATH
+
+    matching_method:MatchingMethodID = 'exhaustive'
+    matcher_type:MatcherTypeID = 'any'
+    feature_type:FeatureTypeID = 'any'
 
     def run(self, ctx:RunContext):
         print("Processing data at path:", ctx.staged_media_path)
@@ -159,6 +166,9 @@ class RegisterImages(PipelineStep):
             'images',
             '--data', ctx.staged_media_path / self.input_path,
             '--output-dir', self.output_path,
+            '--matching-method', self.matching_method,
+            '--matcher-type', self.matcher_type,
+            '--feature-type', self.feature_type,
         ])
 
 
