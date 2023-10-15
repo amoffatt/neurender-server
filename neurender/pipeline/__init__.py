@@ -24,7 +24,7 @@ class RunContext:
     def __init__(self, project_path:Path, working_path:Path, no_skip_steps=[]):
         self.project_path = project_path
         self.working_path = working_path
-        self.no_skip_steps = no_skip_steps
+        self.no_skip_steps = no_skip_steps or []
 
     def can_skip_step(self, step:"PipelineStep"):
         name = step.name
@@ -49,6 +49,8 @@ class PipelineStep(BaseModel):
         result = output_path.exists() and ctx.can_skip_step(self)
         if result:
             print(f" ==> Skipping step {self.name}:{substep}")
+
+        return result
 
     @property
     def name(self):
@@ -102,7 +104,7 @@ class ImportImageBatch(_BaseImportStep):
             if not src_file_path.is_file():
                 continue
 
-            stage_file_path = self.get_stage_file_path(ctx, src_file_path)
+            stage_file_path = self._get_stage_file_path(ctx, src_file_path)
 
             if self.is_rescaling_set:
                 print(f"Rescaling image {src_file_path}")
