@@ -2,26 +2,39 @@
 
 import os
 import argparse
+from pathlib import Path
 from subprocess import run
 
 INSTALL_PATH=os.path.expanduser('~/neurender/tools/nerfstudio-gaussian-splatting-fork')
 
 def main():
     parser = argparse.ArgumentParser(description='Render Gaussian Splatting scene with NerfStudio')
-    parser.add_argument('--model', type=str, help='model folder')
-    parser.add_argument('--camera-path', type=str, help='camera path file from NerfStudio')
-    parser.add_argument('--output', type=str, help='output video path')
-    parser.add_argument('--format', type=str, help='output format', default='video', choices=['video', 'images'])
+    parser.add_argument('-c', '--camera-path', type=str, required=True, help='camera path file from NerfStudio')
+    parser.add_argument('-m', '--model', type=str, help='If camera path is not within the {model}/camera_paths/ folder, specify the location of the model folder')
+    parser.add_argument('-o', '--output', type=str, help='output video path')
+    parser.add_argument('-f', '--format', type=str, help='output format', default='video', choices=['video', 'images'])
 
     args = parser.parse_args()
+
+    camera_path = Path(args.camera_path).expanduser().absolute()
+    model = args.model
+    if not model:
+        model = camera_path.parent.parent
+
+
+    output = args.output
+    if not output:
+        pipeline_path = model.parent
+        project_path = pipeline_path.parent.parent
+        output = f"{project_path.name}_{pipeline_path.name}_{camera_path.stem}"
 
     run([
         'python3',
         os.path.join(INSTALL_PATH, 'nerfstudio/scripts/gaussian_splatting/render.py'),
         'camera-path',
-        '--model-path', args.model,
+        '--model-path', model,
         '--camera-path-filename', args.camera_path,
-        '--output-path', args.output
+        '--output-path', output
     ])
 
 if __name__== "__main__":
