@@ -34,6 +34,7 @@ class PipelineStep(BaseModel):
 class ImportImageBatch(PipelineStep):
     input_path:str = SRC_MEDIA_PATH
     output_path:str = STAGED_MEDIA_PATH
+    select:str = "**/*"
 
     # Scale long edge of frame to dimension
     # 0 indicates no rescaling
@@ -43,12 +44,22 @@ class ImportImageBatch(PipelineStep):
     def run(self, project:Path, working_path:Path):
         input_path = project / self.input_path
         output_path = working_path / self.output_path
-        if self.scale_to_max == 0 and self.scaling == 1:
-            shutil.copytree(input_path, output_path, dirs_exist_ok=True)
-        else:
-            for fn in os.listdir(input_path):
-                print(f"Rescaling image {fn}")
-                image = Image.open(input_path / fn)
+        is_rescaling = self.scale_to_max != 0 or self.scaling != 1
+
+        print("Collecting images in", input_path)
+        for src_path in Path(input_path).glob(self.select):
+            if not src_path.is_file():
+                continue
+
+            # Destination path, flattening directory structure for SFM scripts
+            subpath = src_path.relative_to(input_path)
+            flat_fn = str(subpath).replace('/', '_')
+            dst_path = output_path / flat_fn
+            dst_path.parent.mkdir(parents=True, exist_ok=True)
+
+            if is_rescaling:
+                print(f"Rescaling image {subpath}")
+                image = Image.open(src_path)
 
                 scaling = self.scaling
                 if self.scale_to_max != 0:
@@ -58,8 +69,9 @@ class ImportImageBatch(PipelineStep):
                 new_size = (int(image.width * scaling), int(image.height * scaling))
                 image.thumbnail(new_size, Image.ANTIALIAS)
 
-                # Save the resized image.
-                image.save(output_path / fn)
+                image.save(dst_path)
+            else:
+                shutil.copy(src_path, dst_path)
 
 
 class ImportVideoFile(PipelineStep):
@@ -79,6 +91,7 @@ class RegisterImages(PipelineStep):
     output_path:str = REGISTERED_MEDIA_PATH
 
     def run(self, project:Path, working_path:Path):
+        print("Processing data at path:", working_path / self.input_path)
         run_command([
             'ns-process-data',
             'images',

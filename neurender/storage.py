@@ -115,11 +115,11 @@ class S3:
 
         for f in src.glob(select):
             if f.is_file():
-                src_path = src / f
-                dst_path = bucket_prefix / f
+                src_path = path_str(src / f)
+                dst_path = str(bucket_prefix / f)
 
                 print(f" ==> Uploading file at {src_path} to {bucket_name}:{dst_path}")
-                s3.upload_file(path_str(src_path), bucket_name, dst_path)
+                s3.upload_file(src_path, bucket_name, dst_path)
                 
 
     

@@ -1,4 +1,5 @@
 from argparse import ArgumentParser, Namespace
+from pathlib import Path
 
 from . import NeurenderProject
 from .utils.subprocess import run_command
