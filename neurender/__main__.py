@@ -39,12 +39,13 @@ def _add_download_args(parser:ArgumentParser):
 
 # The `download` subcommand
 def _download_command(args:Namespace):
+    print(f"Downloading {args.src} => {args.dst}")  
     project = NeurenderProject.load(args.src, args.dst)
     print("Done.")
 
 # The `upload` subcommand
 def _upload_command(args:Namespace):
-    print(f"Uploading {args.local_path} => {args.remote_url}")
+    print(f"Uploading {args.src} => {args.dst}")  
     storage.S3().sync_to_remote(args.src, args.dst)
     print("Done.")
     
