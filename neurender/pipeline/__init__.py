@@ -76,6 +76,10 @@ class _BaseImportStep(PipelineStep):
         scaling = self._get_scaling(frame_size)
         return (int(frame_size[0] * scaling), int(frame_size[1] * scaling))
 
+    @property
+    def is_rescaling_set(self):
+        return self.scale_to_max != 0 or self.downscale != 1
+
 
     def _get_stage_file_path(self, ctx:RunContext, src_file_path:Path):
         # Destination path, flattening directory structure for SFM scripts
@@ -92,7 +96,6 @@ class ImportImageBatch(_BaseImportStep):
 
     def run(self, ctx:RunContext):
         src_path = ctx.src_media_path
-        is_rescaling = self.scale_to_max != 0 or self.scaling != 1
 
         print("Collecting images in", src_path)
         for src_file_path in Path(src_path).glob(self.select):
@@ -101,7 +104,7 @@ class ImportImageBatch(_BaseImportStep):
 
             stage_file_path = self.get_stage_file_path(ctx, src_file_path)
 
-            if is_rescaling:
+            if self.is_rescaling_set:
                 print(f"Rescaling image {src_file_path}")
                 image = Image.open(src_file_path)
 
