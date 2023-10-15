@@ -1,0 +1,19 @@
+name: Default
+
+pipeline:
+  - step: ImportImageBatch
+  - step: RegisterImages
+  - step: SetupGaussianSplattingData
+  - step: TrainGaussianSplattingModel
+    resolution: 3840
+    iterations: 32000
+    save_iterations:
+     - 8000
+     - 16000
+     - 24000
+     - 32000
+
+
+upload_artifacts:
+  - media-registered/**/*
+  - model-gaussian-splatting/**/*
