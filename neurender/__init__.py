@@ -36,7 +36,7 @@ class NeurenderPipeline(pydantic.BaseModel):
     def default_output_subpath(self):
         return Path('output') / self.path.stem  # Pipeline name without extension
 
-    def run(self, working_path=''):
+    def run(self, working_path='', no_skip_steps=[]):
         print(f"Running Neurender pipeline '{self.name}' ({path_str(self.path)})")
 
         if not working_path:
@@ -48,7 +48,7 @@ class NeurenderPipeline(pydantic.BaseModel):
 
         print("  => Processing outputs in:", path_str(working_path))
 
-        context = RunContext(self.project_path, working_path)
+        context = RunContext(self.project_path, working_path, no_skip_steps=no_skip_steps)
 
         for step in self.pipeline:
             print("  =>", step)

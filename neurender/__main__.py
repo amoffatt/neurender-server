@@ -13,6 +13,7 @@ def _add_project_arg(parser:ArgumentParser):
 def _add_run_args(parser:ArgumentParser):
     _add_project_arg(parser)
     parser.add_argument("-p", "--pipeline", type=str, default="", help="Pipeline filename to run. Defaults to the first pipeline found in the {project}/pipelines folder")
+    parser.add_argument("-n", "--no-skip", nargs='+', help="Define steps which must not be skipped, even if their output paths already exist")
     parser.add_argument("-o", "--output", type=str, default="", help="Output path for pipeline execution artifacts. Defaults to {project}/output/{pipeline_filename}")
     parser.add_argument("-u", "--upload-url", type=str, default="", help="Specify and S3 url other than the project URL to upload pipeline output artifacts (specified within the pipeline)")
     parser.add_argument("--on-finished", type=str, default="", help="Run command when pipeline is finished")
@@ -23,7 +24,7 @@ def _run_command(args:Namespace):
     pipeline = project.get_pipeline(args.pipeline)
 
     working_path = args.output
-    working_path = pipeline.run(working_path=working_path)
+    working_path = pipeline.run(working_path=working_path, no_skip_steps=args.no_skip)
 
     upload_url = args.upload_url or project.url
     print("Upload url:", upload_url)

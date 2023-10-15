@@ -21,9 +21,14 @@ NERF_MODEL_PATH = 'model-nerf'
 GS_MODEL_PATH = 'model-gaussian-splatting'
 
 class RunContext:
-    def __init__(self, project_path:Path, working_path:Path):
+    def __init__(self, project_path:Path, working_path:Path, no_skip_steps=[]):
         self.project_path = project_path
         self.working_path = working_path
+        self.no_skip_steps = no_skip_steps
+
+    def can_skip_step(self, step:"PipelineStep"):
+        name = step.name
+        return name not in self.no_skip_steps
 
     @property
     def src_media_path(self) -> Path:
@@ -40,8 +45,17 @@ class PipelineStep(BaseModel):
     def run(self, ctx:RunContext):
         pass
 
+    def _skip_step(self, ctx:RunContext, output_path:Path, substep='main'):
+        result = output_path.exists() and ctx.can_skip_step(self)
+        if result:
+            print(f" ==> Skipping step {self.name}:{substep}")
+
+    @property
+    def name(self):
+        return self.__class__.__name__
+
     def __str__(self):
-        return f"{self.__class__.__name__}({super().__str__()})"
+        return f"{self.name}({super().__str__()})"
 
 
 class _BaseImportStep(PipelineStep):
@@ -125,12 +139,19 @@ class RegisterImages(PipelineStep):
 
     def run(self, ctx:RunContext):
         print("Processing data at path:", ctx.staged_media_path)
+
+        output_path = ctx.working_path / self.output_path
+
+        # Skip registration if output dir already exists
+        if self._skip_step(ctx, output_path):
+            return
+
         run_command([
             'ns-process-data',
             'images',
             '--data', ctx.staged_media_path / self.input_path,
             '--output-dir', self.output_path,
-        ], cwd=path_str(ctx.working_path))
+        ])
 
 
 class SetupGaussianSplattingData(PipelineStep):
@@ -138,6 +159,10 @@ class SetupGaussianSplattingData(PipelineStep):
     def run(self, ctx:RunContext):
         input_path = ctx.working_path / REGISTERED_MEDIA_PATH
         output_path = ctx.working_path / REGISTERED_MEDIA_GS_PATH
+
+        if self._skip_step(ctx, output_path):
+            return
+
         shutil.copytree(input_path / 'colmap', output_path / 'distorted', dirs_exist_ok=True)
         shutil.copytree(input_path / 'images', output_path / 'input', dirs_exist_ok=True)
 
@@ -159,10 +184,14 @@ class TrainGaussianSplattingModel(TrainingStep):
 
     def run(self, ctx:RunContext):
 
+        model_path = ctx.working_path / GS_MODEL_PATH
+        if self._skip_step(ctx, model_path):
+            return
+
         run_command([
             "python3", "train.py",
              "--source_path", ctx.working_path / REGISTERED_MEDIA_GS_PATH,
-             "--model_path", ctx.working_path / GS_MODEL_PATH,
+             "--model_path", model_path,
              "--iterations", self.iterations,
              "--resolution", self.resolution,
              "--save_iterations", *self.save_iterations,
