@@ -185,7 +185,9 @@ class TrainingStep(PipelineStep):
 class TrainGaussianSplattingModel(TrainingStep):
     resolution:int = 1920
     iterations:int = 30_000
-    save_iterations:List[int] = [7000, 30_000]
+    save_iterations:List[int] = []
+    # Number of iterations between model saves and checkpoints
+    save_frequency:int = 0
 
     def run(self, ctx:RunContext):
 
@@ -193,13 +195,19 @@ class TrainGaussianSplattingModel(TrainingStep):
         if self._skip_step(ctx, model_path):
             return
 
+        save_iterations = self.save_iterations
+        save_iterations += list(range(0, self.iterations, self.save_frequency))
+        save_iterations += [self.iterations]
+        save_iterations = sorted(set(save_iterations))
+
         run_command([
             "python3", "train.py",
              "--source_path", ctx.working_path / REGISTERED_MEDIA_GS_PATH,
              "--model_path", model_path,
              "--iterations", self.iterations,
              "--resolution", self.resolution,
-             "--save_iterations", *self.save_iterations,
+             "--save_iterations", *save_iterations,
+             "--checkpoint_iterations", *save_iterations,
         ], cwd=GAUSSIAN_SPLATTING_ROOT)
 
         
