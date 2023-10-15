@@ -14,6 +14,8 @@ PIPELINE_FILE_SUFFIX = '.nrp'
 
 PIPELINES_PATH = "pipelines"
 
+DEFAULT_PIPELINE = "default"
+
 
 
 class NeurenderPipeline(pydantic.BaseModel):
@@ -111,7 +113,8 @@ class NeurenderProject:
     def get_pipeline(self, name:str) -> NeurenderPipeline:
         for path in self.get_pipeline_paths():
             # If name is not specified, return the first available pipeline
-            if not name or path.name == Path(name).name:
+            filename = path.stem
+            if filename == name or filename == DEFAULT_PIPELINE:
                 return self._get_pipeline_by_path(path)
 
         return None

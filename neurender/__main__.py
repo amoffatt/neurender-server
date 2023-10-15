@@ -2,9 +2,9 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 from . import NeurenderProject
+from .utils import print_err
 from .utils.subprocess import run_command
 from . import config, storage
-
 
 def _add_project_arg(parser:ArgumentParser):
     parser.add_argument("project", type=str, help="Path or S3 bucket url to a project directory")
@@ -22,6 +22,11 @@ def _add_run_args(parser:ArgumentParser):
 def _run_command(args:Namespace):
     project = NeurenderProject.load(args.project, args.local_path)
     pipeline = project.get_pipeline(args.pipeline)
+
+    if not pipeline:
+        print_err(f"Pipeline {args.pipeline} not found")
+        return
+
 
     working_path = args.output
     working_path = pipeline.run(working_path=working_path, no_skip_steps=args.no_skip)

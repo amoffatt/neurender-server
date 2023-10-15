@@ -1,9 +1,9 @@
 from pathlib import Path
 import uuid
-import os
-from typing import Type
-from pydantic import BaseModel
-from pydantic_yaml import parse_yaml_file_as, to_yaml_file
+import sys, os
+
+def print_err(*args):
+    print(*args, file=sys.stderr)
 
 def path_str(path:Path | str) -> str:
     return str(Path(path).expanduser().absolute())
