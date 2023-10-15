@@ -1,0 +1,16 @@
+#!/bin/bash
+
+neurender_root=/home/user/neurender
+cd $neurender_root
+
+git fetch
+
+if [[ $1 -eq '-r' ]]; then
+    git reset --hard HEAD
+    exit
+fi
+
+# Update neurender code to the latest
+echo "Pulling latest Neurender updates via git"
+echo "If this fails, consider adding the -r flag to force a reset --hard"
+git pull

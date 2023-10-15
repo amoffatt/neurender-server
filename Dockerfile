@@ -92,7 +92,7 @@ RUN pip install am_imaging pydantic pydantic_yaml
 # Copy this repository into the container
 COPY --chown=$USER:$USER . $REPO_DIR
 
-RUN echo 'export PATH=${REPO_DIR}/bin:$PATH' >> .bashrc
+RUN echo "export PATH=${REPO_DIR}/bin:\$PATH" >> .bashrc
 
 # ensure CUDA tools are on the path
 # RUN echo 'export PATH=/usr/local/cuda/bin:$PATH' >> .bashrc
