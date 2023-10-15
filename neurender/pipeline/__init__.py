@@ -106,6 +106,9 @@ class ImportImageBatch(_BaseImportStep):
 
             stage_file_path = self._get_stage_file_path(ctx, src_file_path)
 
+            if self._skip_step(ctx, stage_file_path, substep=str(src_file_path)):
+                continue
+
             if self.is_rescaling_set:
                 print(f"Rescaling image {src_file_path}")
                 image = Image.open(src_file_path)
@@ -192,11 +195,14 @@ class TrainGaussianSplattingModel(TrainingStep):
     def run(self, ctx:RunContext):
 
         model_path = ctx.working_path / GS_MODEL_PATH
-        if self._skip_step(ctx, model_path):
-            return
+
+        # Prevent skipping training step for now
+        # if self._skip_step(ctx, model_path):
+        #     return
 
         save_iterations = self.save_iterations
-        save_iterations += list(range(0, self.iterations, self.save_frequency))
+        if self.save_frequency > 0:
+            save_iterations += list(range(0, self.iterations, self.save_frequency))
         save_iterations += [self.iterations]
         save_iterations = sorted(set(save_iterations))
 
