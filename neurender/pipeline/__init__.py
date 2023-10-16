@@ -155,21 +155,26 @@ class RegisterImages(PipelineStep):
     def run(self, ctx:RunContext):
         print("Processing data at path:", ctx.staged_media_path)
 
+        input_path = ctx.staged_media_path / self.input_path
         output_path = ctx.working_path / self.output_path
 
         # Skip registration if output dir already exists
         if self._skip_step(ctx, output_path):
             return
 
-        run_command([
-            'ns-process-data',
-            'images',
-            '--data', ctx.staged_media_path / self.input_path,
-            '--output-dir', self.output_path,
-            '--matching-method', self.matching_method,
-            '--matcher-type', self.matcher_type,
-            '--feature-type', self.feature_type,
-        ])
+        try:
+            run_command([
+                'ns-process-data',
+                'images',
+                '--data', input_path,
+                '--output-dir', output_path,
+                '--matching-method', self.matching_method,
+                '--matcher-type', self.matcher_type,
+                '--feature-type', self.feature_type,
+            ])
+        except:
+            print("When registration fails, try a different matching_method, matcher_type, or feature_type")
+            raise
 
 
 class SetupGaussianSplattingData(PipelineStep):
