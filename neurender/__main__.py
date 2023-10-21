@@ -42,17 +42,18 @@ def _run_command(args:Namespace):
 def _add_download_args(parser:ArgumentParser):
     parser.add_argument('src', type=str, help="Source directory")
     parser.add_argument('dst', type=str, default='', nargs='?', help="Destination directory")
+    parser.add_argument('-s', '--select', type=str, default='', help="Select specific files by glob pattern. **/* selects all subdirectories and files")
 
 # The `download` subcommand
 def _download_command(args:Namespace):
     print(f"Downloading {args.src} => {args.dst}")  
-    project = NeurenderProject.load(args.src, args.dst)
+    project = NeurenderProject.load(args.src, args.dst, select=args.select)
     print("Done.")
 
 # The `upload` subcommand
 def _upload_command(args:Namespace):
     print(f"Uploading {args.src} => {args.dst}")  
-    storage.S3().sync_to_remote(args.src, args.dst)
+    storage.S3().sync_to_remote(args.src, args.dst, select=args.select)
     print("Done.")
     
 

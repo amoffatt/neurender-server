@@ -14,6 +14,8 @@ from .utils import path_str, print_err
 
 cfg = config.load()
 
+SELECT_ALL_FILES = "**/*"
+
 @staticmethod
 def parse_s3_url(url):
     """Splits an AWS S3 URL into the bucket name and key.
@@ -65,7 +67,7 @@ class S3:
         
 
 
-    def sync_to_local(self, src:str, dst:Path | str=None, select="**/*"):
+    def sync_to_local(self, src:str, dst:Path | str=None, select=""):
         """
         Syncs an S3 bucket url folder `src` to the local filesystem at `dst`.
         The s3 prefix is optional in `src`, which can be of the following forms:
@@ -82,6 +84,8 @@ class S3:
             dst = Path(src).name
         else:
             dst = Path(dst).expanduser()
+
+        select = select or SELECT_ALL_FILES
 
         bucket_name, bucket_prefix = parse_s3_url(src)
 
@@ -136,11 +140,12 @@ class S3:
                 os.utime(local_path, times=(timestamp, timestamp))
 
 
-    def sync_to_remote(self, src:Path | str, dst:str, select="**/*"):
+    def sync_to_remote(self, src:Path | str, dst:str, select=""):
         """
         Syncs the local file system folder `src` to the S3 bucket path/url `dst`.
         """
         s3 = self.s3
+        select = select or SELECT_ALL_FILES
 
         src = Path(src).expanduser()
 

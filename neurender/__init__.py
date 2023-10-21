@@ -83,7 +83,7 @@ class NeurenderPipeline(pydantic.BaseModel):
 
 class NeurenderProject:
     @staticmethod
-    def load(src_url:str, local_path:str='') -> "NeurenderProject":
+    def load(src_url:str, local_path:str='', select='') -> "NeurenderProject":
         if src_url.startswith('s3://'):
 
             # If local_path is not specified, save the project to a local folder based on the last
@@ -92,8 +92,8 @@ class NeurenderProject:
             project_path = Path(project_path).absolute()
 
 
-            print(f"Downloading project {src_url} => {project_path}")
-            storage.S3().sync_to_local(src_url, project_path)
+            print(f"Downloading project {src_url} => {project_path} (select: {select or storage.SELECT_ALL_FILES})")
+            storage.S3().sync_to_local(src_url, project_path, select=select)
 
             return NeurenderProject(project_path, src_url)
         else:
