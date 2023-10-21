@@ -2,16 +2,18 @@ name: Default
 
 pipeline:
   - step: ImportImageBatch
+    scale_to_max: 2160
+    #downscale: 2
   - step: RegisterImages
+    #matching_method: vocab_tree  # exhaustive, sequential, vocab_tree
+    #matcher_type: any   # any,NN,superglue,superglue-fast,NN-superpoint,NN-ratio,NN-mutual,adalam
+    #feature_type: any   # superpoint_aachen, any, r2d2, d2net-ss, disk, superpoint, superpoint_max, sosnet, sift, superpoint_inloc
+    #refine_pixsfm: false # Run Pixel-Perfect SFM (default: true)
   - step: SetupGaussianSplattingData
   - step: TrainGaussianSplattingModel
-    resolution: 3840
+    resolution: 2160
     iterations: 32000
-    save_iterations:
-     - 8000
-     - 16000
-     - 24000
-     - 32000
+    save_frequency: 8000
 
 
 upload_artifacts:

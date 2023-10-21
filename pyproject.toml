@@ -16,8 +16,10 @@ authors = [
 
 dependencies = [
     "python-dotenv",
+    "Pillow",
     "pydantic",
     "pydantic_yaml",
+    "boto3",
     "am-imaging",
 ]
 

@@ -4,12 +4,12 @@ services:
   gaussian-splatting:
     platform: linux/amd64
     shm_size: '12gb'
-    image: airstudio/neurender_nerfstudio:latest
-    container_name: neurender_nerfstudio
+    image: airstudio/neurender:${IMAGE_TAG}
+    container_name: neurender
     build:
       context: .
       dockerfile: ./Dockerfile
-      network: host
+      # network: host
     stdin_open: true
     tty: true
     environment:
@@ -18,8 +18,8 @@ services:
     ports:
       - "7007:7007"   # nerf studio viewer
       - "6009:6009"   # gaussian splatting network viewer
-    volumes:
-      - ${HOST_VOLUME}:/data
+    # volumes:
+      # - ${HOST_VOLUME}:/data
     #   - /tmp/.X11-unix:/tmp/.X11-unix
     # working_dir: /workspace/
     command: /bin/bash

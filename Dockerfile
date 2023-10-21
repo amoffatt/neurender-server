@@ -86,11 +86,23 @@ RUN pip install am_imaging pydantic pydantic_yaml
 # RUN pip uninstall -y opencv-python
 # RUN pip install opencv-python-headless
 
+# Ensure user's default shell is bash
+RUN usermod --shell /bin/bash user
 
-# TODO ensure .profile is executed when user logs in
+USER ${USER}
 
 # Copy this repository into the container
-COPY --chown=$USER:$USER . $REPO_DIR
+COPY --chown=$USER:$USER bin $REPO_DIR/bin
+COPY --chown=$USER:$USER tools $REPO_DIR/tools
+COPY --chown=$USER:$USER neurender $REPO_DIR/neurender
+COPY --chown=$USER:$USER .git $REPO_DIR/.git
+
+# Copy individual files in the project root
+# Note that Dockerfiles treat directories differently than files, so folders above must
+# be specified individually
+COPY --chown=$USER:$USER pyproject.toml .gitignore .gitmodules run-shutdown-timer.sh example-pipeline.nrp $REPO_DIR/
+
+# RUN rm -rf ${REPO_DIR}/neurender.egg-info   # prevents pip install -e . from running as non-root?
 
 RUN echo "export PATH=${REPO_DIR}/bin:\$PATH" >> .bashrc
 
