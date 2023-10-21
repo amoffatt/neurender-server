@@ -41,7 +41,7 @@ def _run_command(args:Namespace):
 
 def _add_download_args(parser:ArgumentParser):
     parser.add_argument('src', type=str, help="Source directory")
-    parser.add_argument('dst', type=str, help="Destination directory")
+    parser.add_argument('dst', type=str, default='', nargs='?', help="Destination directory")
 
 # The `download` subcommand
 def _download_command(args:Namespace):

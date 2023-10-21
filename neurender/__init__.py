@@ -88,7 +88,7 @@ class NeurenderProject:
 
             # If local_path is not specified, save the project to a local folder based on the last
             # element of the projects path url (same as git's behavior)
-            project_path = local_path if local_path else src_url.split('/')[-1]
+            project_path = local_path if local_path else Path(src_url).name
             project_path = Path(project_path).absolute()
 
 

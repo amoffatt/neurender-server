@@ -1,11 +1,16 @@
 
+import os
 from pathlib import Path, PurePath
 import fnmatch
 import urllib
 import boto3
+from pydantic import BaseModel
+from neurender.utils.files import get_last_modified
+
+from neurender.utils.pydantic import read_yaml_file, write_yaml_file
 from . import config
 from .utils.subprocess import run_command
-from .utils import path_str
+from .utils import path_str, print_err
 
 cfg = config.load()
 
@@ -42,8 +47,13 @@ class StorageError(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-class S3:
 
+DIRECTORY_METAFILE_NAME = ".remote.meta"
+class RemoteFileMeta(BaseModel):
+    url:str = ''
+
+
+class S3:
 
     def __init__(self):
         s3_config = cfg.storage.s3
@@ -55,7 +65,7 @@ class S3:
         
 
 
-    def sync_to_local(self, src:str, dst:Path | str, select="**/*"):
+    def sync_to_local(self, src:str, dst:Path | str=None, select="**/*"):
         """
         Syncs an S3 bucket url folder `src` to the local filesystem at `dst`.
         The s3 prefix is optional in `src`, which can be of the following forms:
@@ -68,7 +78,11 @@ class S3:
         properly expand the pattern '**'
         """
         s3 = self.s3
-        dst = Path(dst).expanduser()
+        if not dst:
+            dst = Path(src).name
+        else:
+            dst = Path(dst).expanduser()
+
         bucket_name, bucket_prefix = parse_s3_url(src)
 
         print(f"Copying S3 to local '{bucket_name}:{bucket_prefix}' => '{dst}'")
@@ -79,8 +93,16 @@ class S3:
             print(f"{src} returned no content")
             raise StorageError('No remote content found')
 
+        dst.mkdir(parents=True, exist_ok=True)
+
+        # Write remote directory metadata
+        meta_file = dst / DIRECTORY_METAFILE_NAME
+        meta = RemoteFileMeta(url=src)
+        write_yaml_file(meta, meta_file)
+
         for obj in s3_contents:
-            #print("Found object:", obj)
+            print("\n\n====")
+            print("Found object:", obj)
 
             file_key = obj['Key']
 
@@ -90,16 +112,28 @@ class S3:
             local_path = dst / PurePath(file_key).relative_to(bucket_prefix)
 
             if local_path.exists():
-                print(f" ==> Skipping file already present at {local_path}")
-                continue
+                remote_last_modified = obj['LastModified']
+                last_modified = get_last_modified(local_path)
+                print("Remote modified:", remote_last_modified)
+                print("Local modified: ", last_modified)
+                verb = "Updating"
+                try:
+                    if remote_last_modified and remote_last_modified <= last_modified:
+                        verb = "Skipping"
+                        continue
+                finally:
+                    print(f" ==> {verb} file already present at {local_path}")
+            else:
+                print(f" ==> Downloading remote S3 file at {bucket_name}/{file_key} => {local_path}")
 
-            print(f" ==> Downloading remote S3 file at {bucket_name}/{file_key} => {local_path}")
 
             if is_s3_dir(obj):
                 local_path.mkdir(exist_ok=True, parents=True)
             else:
                 local_path.parent.mkdir(exist_ok=True, parents=True)
                 s3.download_file(bucket_name, file_key, local_path)
+                timestamp = remote_last_modified.timestamp()
+                os.utime(local_path, times=(timestamp, timestamp))
 
 
     def sync_to_remote(self, src:Path | str, dst:str, select="**/*"):
@@ -109,16 +143,45 @@ class S3:
         s3 = self.s3
 
         src = Path(src).expanduser()
+
+        if not dst:
+            # check for remote.meta file if no dst provided
+            remote_meta_path = src/DIRECTORY_METAFILE_NAME
+            try:
+                remote_meta = read_yaml_file(RemoteFileMeta, remote_meta_path)
+                dst = remote_meta.url
+            except Exception as e:
+                print_err(f"Error reading {DIRECTORY_METAFILE_NAME}:", e)
+                raise StorageError(f"No destination URL provided and {DIRECTORY_METAFILE_NAME} not found in source directory")
+
         
         bucket_name, bucket_prefix = parse_s3_url(dst)
-        bucket_prefix = Path(bucket_prefix)
+
+        s3_result = s3.list_objects_v2(Bucket=bucket_name, Prefix=bucket_prefix)
+        s3_existing_contents = s3_result.get('Contents')
+        if not s3_existing_contents:
+            print(f"No existing remote content found in bucket {bucket_name}:{bucket_prefix}")
+
+        remote_lookup = { o['Key']:o for o in s3_existing_contents }
+
 
         for src_path in src.glob(select):
             if src_path.is_file():
                 subpath = src_path.relative_to(src)
-                dst_path = str(bucket_prefix / subpath)
+                dst_path = str(Path(bucket_prefix) / subpath)
 
-                print(f" ==> Uploading file at {src_path} to {bucket_name}:{dst_path}")
+                verb = "Uploading"
+                existing_obj = remote_lookup.get(dst_path)
+                if existing_obj:
+                    last_modified = get_last_modified(src_path)
+                    if existing_obj['LastModified'] >= last_modified:
+                        print(f"Skipping file {src_path}: Existing remote content is same or newer version")
+                        continue
+                    else:
+                        verb = "Replacing"
+
+
+                print(f" ==> {verb} file at {src_path} to {bucket_name}:{dst_path}")
                 s3.upload_file(src_path, bucket_name, dst_path)
                 
 
