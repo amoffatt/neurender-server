@@ -142,7 +142,7 @@ MatchingMethodID = Literal['exhaustive', 'sequential', 'vocab_tree']
 MatcherTypeID = Literal['any', 'NN', 'superglue', 'superglue-fast', 'NN-superpoint', 'NN-ratio', 'NN-mutual', 'adalam']
 FeatureTypeID = Literal['any', 'sift', 'superpoint', 'superpoint_aachen', 'superpoint_max', 'superpoint_inloc', 'r2d2', 'd2net-ss', 'sosnet', 'disk']
 
-class RegisterImages(PipelineStep):
+class AlignImages(PipelineStep):
     # Relative to media-staged/
     input_path:str = '.'
 
