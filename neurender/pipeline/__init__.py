@@ -129,9 +129,10 @@ class ImportVideo(_BaseImportStep):
 
     def run(self, ctx:RunContext):
         input_path = ctx.src_media_path / self.file_path
-        output_frame_prefix = path_str(self.get_stage_file_path(ctx, input_path)) + '_'
+        output_path = ctx.staged_media_path
+        output_frame_prefix = path_str(self._get_stage_file_path(ctx, input_path)) + '_'
         export_sharpest_frames(input_path,
-                               ctx.staged_media_path,
+                               output_path,
                                output_frame_prefix,
                                downscale=self.downscale,
                                interval=self.extraction_interval)
@@ -176,6 +177,14 @@ class RegisterImages(PipelineStep):
 
         if self.refine_pixsfm:
             cmd += ['--refine-pixsfm']
+
+        use_hloc = self.refine_pixsfm
+        use_hloc |= self.matcher_type not in ['any']
+        use_hloc |= self.feature_type not in ['any', 'sift']
+
+        if use_hloc:
+            cmd += ['--sfm-tool', 'hloc']
+
 
         try:
             run_command(cmd)
