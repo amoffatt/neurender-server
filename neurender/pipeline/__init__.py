@@ -151,6 +151,7 @@ class RegisterImages(PipelineStep):
     matching_method:MatchingMethodID = 'exhaustive'
     matcher_type:MatcherTypeID = 'any'
     feature_type:FeatureTypeID = 'any'
+    refine_pixsfm:bool = True
 
     def run(self, ctx:RunContext):
         print("Processing data at path:", ctx.staged_media_path)
@@ -162,16 +163,22 @@ class RegisterImages(PipelineStep):
         if self._skip_step(ctx, output_path):
             return
 
+
+        cmd = [
+            'ns-process-data',
+            'images',
+            '--data', input_path,
+            '--output-dir', output_path,
+            '--matching-method', self.matching_method,
+            '--matcher-type', self.matcher_type,
+            '--feature-type', self.feature_type,
+        ]
+
+        if self.refine_pixsfm:
+            cmd += ['--refine-pixsfm']
+
         try:
-            run_command([
-                'ns-process-data',
-                'images',
-                '--data', input_path,
-                '--output-dir', output_path,
-                '--matching-method', self.matching_method,
-                '--matcher-type', self.matcher_type,
-                '--feature-type', self.feature_type,
-            ])
+            run_command(cmd)
         except:
             print("When registration fails, try a different matching_method, matcher_type, or feature_type")
             raise
