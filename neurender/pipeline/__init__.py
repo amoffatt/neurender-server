@@ -22,8 +22,8 @@ GS_MODEL_PATH = 'model-gaussian-splatting'
 
 class RunContext:
     def __init__(self, project_path:Path, working_path:Path, no_skip_steps=[]):
-        self.project_path = project_path
-        self.working_path = working_path
+        self.project_path = project_path.absolute()
+        self.working_path = working_path.absolute()
         self.no_skip_steps = no_skip_steps or []
 
     def can_skip_step(self, step:"PipelineStep"):
@@ -225,6 +225,7 @@ class TrainGaussianSplattingModel(TrainingStep):
 
     def run(self, ctx:RunContext):
 
+        source_path = ctx.working_path / REGISTERED_MEDIA_GS_PATH
         model_path = ctx.working_path / GS_MODEL_PATH
 
         # Prevent skipping training step for now
@@ -239,7 +240,7 @@ class TrainGaussianSplattingModel(TrainingStep):
 
         run_command([
             "python3", "train.py",
-             "--source_path", ctx.working_path / REGISTERED_MEDIA_GS_PATH,
+             "--source_path", source_path,
              "--model_path", model_path,
              "--iterations", self.iterations,
              "--resolution", self.resolution,
