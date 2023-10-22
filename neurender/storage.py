@@ -112,10 +112,11 @@ class S3:
         write_yaml_file(meta, meta_file)
 
         for obj in s3_contents:
-            print("\n\n====")
-            print("Found object:", obj)
+            # print("\n\n====")
+            # print("Found object:", obj)
 
             file_key = obj['Key']
+            remote_last_modified = obj['LastModified']
 
             if not fnmatch.fnmatch(file_key, select):
                 continue
@@ -123,10 +124,9 @@ class S3:
             local_path = dst / PurePath(file_key).relative_to(bucket_prefix)
 
             if local_path.exists():
-                remote_last_modified = obj['LastModified']
                 last_modified = get_last_modified(local_path)
-                print("Remote modified:", remote_last_modified)
-                print("Local modified: ", last_modified)
+                # print("Remote modified:", remote_last_modified)
+                # print("Local modified: ", last_modified)
                 verb = "Updating"
                 try:
                     if remote_last_modified and remote_last_modified <= last_modified:
