@@ -152,7 +152,7 @@ class AlignImages(PipelineStep):
     matching_method:MatchingMethodID = 'exhaustive'
     matcher_type:MatcherTypeID = 'any'
     feature_type:FeatureTypeID = 'any'
-    refine_pixsfm:bool = True
+    refine_pixsfm:bool = False
 
     def run(self, ctx:RunContext):
         print("Processing data at path:", ctx.staged_media_path)
@@ -222,6 +222,8 @@ class TrainGaussianSplattingModel(TrainingStep):
     save_iterations:List[int] = []
     # Number of iterations between model saves and checkpoints
     save_frequency:int = 0
+    white_background:bool = False
+    sh_degree:int = 3
 
     def run(self, ctx:RunContext):
 
@@ -243,6 +245,8 @@ class TrainGaussianSplattingModel(TrainingStep):
              "--source_path", source_path,
              "--model_path", model_path,
              "--iterations", self.iterations,
+             "--sh_degree", self.sh_degree,
+             "--white_background", self.white_background,
              "--resolution", self.resolution,
              "--save_iterations", *save_iterations,
              "--checkpoint_iterations", *save_iterations,
