@@ -102,7 +102,13 @@ class NeurenderProject:
 
         
     def __init__(self, path:str, url:str=None):
-        self.url = url
+        if url:
+            self.url = url
+        else:
+            remote_meta = storage.load_remote_meta(path)
+            if remote_meta:
+                self.url = remote_meta.url
+
         self.path = Path(path).expanduser()
         self.pipelines_path = self.path / PIPELINES_PATH
 

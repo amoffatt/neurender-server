@@ -43,7 +43,14 @@ def parse_s3_url(url):
 
 def is_s3_dir(s3_obj):
     return s3_obj['Size'] == 0 and s3_obj['Key'][-1] == '/'
-    
+
+def load_remote_meta(directory:Path|str):
+    remote_meta_path = Path(directory) / DIRECTORY_METAFILE_NAME
+    try:
+        return read_yaml_file(RemoteFileMeta, remote_meta_path)
+    except Exception as e:
+        print_err("Remote folder metadata not loaded:", e)
+
 
 class StorageError(Exception):
     def __init__(self, *args, **kwargs):
@@ -151,13 +158,10 @@ class S3:
 
         if not dst:
             # check for remote.meta file if no dst provided
-            remote_meta_path = src/DIRECTORY_METAFILE_NAME
             try:
-                remote_meta = read_yaml_file(RemoteFileMeta, remote_meta_path)
-                dst = remote_meta.url
+                dst = load_remote_meta(src).url
             except Exception as e:
-                print_err(f"Error reading {DIRECTORY_METAFILE_NAME}:", e)
-                raise StorageError(f"No destination URL provided and {DIRECTORY_METAFILE_NAME} not found in source directory")
+                raise StorageError(f"No destination URL provided and {DIRECTORY_METAFILE_NAME} could not be loaded from source directory")
 
         
         bucket_name, bucket_prefix = parse_s3_url(dst)
