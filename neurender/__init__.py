@@ -3,7 +3,7 @@ import traceback
 import pydantic
 import asyncio
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from .pipeline import PipelineStep, RunContext
 from .utils import path_str, unique_subpath
@@ -13,6 +13,7 @@ from . import storage
 PIPELINE_FILE_SUFFIX = '.nrp'
 
 PIPELINES_PATH = "pipelines"
+OUTPUT_PATH = "output"
 
 DEFAULT_PIPELINE = "default"
 
@@ -31,12 +32,15 @@ class NeurenderPipeline(pydantic.BaseModel):
     upload_artifacts:List[str]
     
     name:str
-    path:Path = None
-    project_path:Path = None
+    path:Optional[Path] = None
+    project_path:Optional[Path] = None
 
     @property
     def default_output_subpath(self):
-        return Path('output') / self.path.stem  # Pipeline name without extension
+        path = Path(OUTPUT_PATH)
+        if self.path:
+            return path / self.path.stem    # Pipeline name without extension
+        return path / "default"
 
     def run(self, working_path='', no_skip_steps=[]):
         print(f"Running Neurender pipeline '{self.name}' ({path_str(self.path)})")

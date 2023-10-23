@@ -1,11 +1,14 @@
 from pathlib import Path
+from typing import Optional
 import uuid
 import sys, os
 
 def print_err(*args):
     print(*args, file=sys.stderr)
 
-def path_str(path:Path | str) -> str:
+def path_str(path:Optional[Path | str]) -> str:
+    if not path:
+        return ''
     return str(Path(path).expanduser().absolute())
 
 def unique_subpath(base_path:Path):

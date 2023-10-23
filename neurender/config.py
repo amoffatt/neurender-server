@@ -1,26 +1,28 @@
 from io import IOBase, StringIO
 from pathlib import Path
+from typing import Optional
 from pydantic import BaseModel
 from .utils.pydantic import read_yaml_file, write_yaml_file
 from .paths import CONFIG_FILE
 
 
 class S3Config(BaseModel):
-    endpoint_url:str = None
-    access_key:str = None
-    access_secret_key:str = None
+    endpoint_url:str = ''
+    access_key:str = ''
+    access_secret_key:str = ''
+    process_count:int = 8
 
 
 class StorageConfig(BaseModel):
-    s3:S3Config = None
+    s3:Optional[S3Config] = None
     
 
 class NeurenderConfig(BaseModel):
-    storage:StorageConfig = None
+    storage:Optional[StorageConfig] = None
 
 
 
-def load(file:Path | str | IOBase = None):
+def load(file:Path | str | IOBase = '') -> NeurenderConfig:
     try:
         return read_yaml_file(NeurenderConfig, file or CONFIG_FILE)
     except Exception as e:

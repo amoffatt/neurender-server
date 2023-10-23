@@ -1,9 +1,10 @@
 from io import IOBase
 from pathlib import Path
-from typing import Type, Union, Annotated, List
+from typing import Type, TypeVar, Union, Annotated, List
 from pydantic import BaseModel, Field, ValidationError
 from pydantic_core import core_schema
 from pydantic_yaml import parse_yaml_file_as, to_yaml_file
+# from pydantic_yaml.loader import T as TModel
 
 def inject_classname_field(cls:BaseModel, field_name:str):
     '''
@@ -48,7 +49,8 @@ def subclasses(_type:Type):
 
 FileLike = Path | str | IOBase
     
-def read_yaml_file(cls:Type[BaseModel], file:FileLike):
+TModel = TypeVar("TModel", bound=BaseModel)
+def read_yaml_file(cls:Type[TModel], file:FileLike) -> TModel:
     try:
         return parse_yaml_file_as(cls, file)
     except ValidationError as e:
