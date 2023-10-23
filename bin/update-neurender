@@ -14,3 +14,7 @@ else
     git pull
 fi
 
+# Invoke twice to ensure updated
+pip install --upgrade am-imaging
+pip install --upgrade am-imaging
+
