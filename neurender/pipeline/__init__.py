@@ -240,17 +240,20 @@ class TrainGaussianSplattingModel(TrainingStep):
         save_iterations += [self.iterations]
         save_iterations = sorted(set(save_iterations))
 
-        run_command([
+        cmd = [
             "python3", "train.py",
              "--source_path", source_path,
              "--model_path", model_path,
              "--iterations", self.iterations,
              "--sh_degree", self.sh_degree,
-             "--white_background", self.white_background,
              "--resolution", self.resolution,
              "--save_iterations", *save_iterations,
              "--checkpoint_iterations", *save_iterations,
-        ], cwd=GAUSSIAN_SPLATTING_ROOT)
+        ]
+        if self.white_background:
+            cmd += ["--white_background"]
+
+        run_command(cmd, cwd=GAUSSIAN_SPLATTING_ROOT)
 
         
 class RunNerfStudioGaussianSplattingViewer(PipelineStep):
