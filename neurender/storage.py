@@ -225,6 +225,7 @@ class S3:
         
         bucket_name, bucket_prefix = parse_s3_url(dst)
 
+        remote_lookup = {}
         try:
             remote_lookup = { o['Key']: o for o in self.iter_s3_content(bucket_name, bucket_prefix) }
         except Exception as e:
@@ -242,7 +243,7 @@ class S3:
                     if existing_obj:
                         last_modified = get_last_modified(src_path)
                         if existing_obj['LastModified'] >= last_modified:
-                            print(f"Skipping file {src_path}: Existing remote content is same or newer version")
+                            #print(f"Skipping file {src_path}: Existing remote content is same or newer version")
                             continue
                         else:
                             verb = "Replacing"
