@@ -2,7 +2,7 @@
 from multiprocessing import Pool
 from threading import Semaphore
 import os
-from pathlib import Path
+from pathlib import Path, PurePath
 import fnmatch
 from typing import Tuple
 import urllib
@@ -107,6 +107,8 @@ class WorkerPool:
         self._pool.apply_async(func, args, kwargs,
                                callback=lambda _: self._semaphore.release(),
                                error_callback=lambda err: print_err("Worker pool error:", err))
+def get_relative_file_key(bucket_prefix, file_key) -> str:
+    return str(PurePath(file_key).relative_to(bucket_prefix))
 
 
 class S3:
@@ -150,10 +152,10 @@ class S3:
         properly expand the pattern '**'
         """
         if not dst:
-            dst = Path(src).name
+            dst = Path(Path(src).name)
         else:
             dst = Path(dst).expanduser()
-
+        
         select = select or SELECT_ALL_FILES
 
         bucket_name, bucket_prefix = parse_s3_url(src)
@@ -173,12 +175,13 @@ class S3:
             #     pool.apply(_invoke_download_file, (self, i))
             # pool.map(_invoke_download_file, [(0, i) for i in range(10)])
                 file_key = obj['Key']
+                relative_file_key = get_relative_file_key(bucket_prefix, file_key)
 
-                if not fnmatch.fnmatch(file_key, select):
+                if not fnmatch.fnmatch(relative_file_key, select):
                     continue
 
                 remote_last_modified = obj['LastModified']
-                local_path = dst / Path(file_key).relative_to(bucket_prefix)
+                local_path = dst / relative_file_key
 
                 if local_path.exists():
                     last_modified = get_last_modified(local_path)
@@ -190,7 +193,8 @@ class S3:
                             verb = "Skipping"
                             continue 
                     finally:
-                        print(f" ==> {verb} file already present at {local_path}")
+                        pass
+                        #print(f" ==> {verb} file already present at {local_path}")
                 else:
                     print(f" ==> Downloading remote S3 file at {bucket_name}/{file_key} => {local_path}")
 
@@ -233,10 +237,13 @@ class S3:
 
 
         with WorkerPool(self._config.process_count) as pool:
-            for src_path in src.glob(select):
+            for src_path in src.glob("*"):
+                relative_src_path = src_path.relative_to(src)
+                if not fnmatch.fnmatch(str(relative_src_path), select):
+                    continue
+
                 if src_path.is_file():
-                    subpath = src_path.relative_to(src)
-                    dst_path = str(Path(bucket_prefix) / subpath)
+                    dst_path = str(Path(bucket_prefix) / relative_src_path)
 
                     verb = "Uploading"
                     existing_obj = remote_lookup.get(dst_path)
